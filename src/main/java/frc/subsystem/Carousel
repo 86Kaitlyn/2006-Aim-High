@@ -1,0 +1,133 @@
+package frc.subsystem;
+/*
+// Author: Team 86
+// History: 1/28/20 - Kasey and Kaitlyn
+// Need:
+// - 3 magnetic switches
+// - three banner sensors for identifiying balls in positions
+// - three torque motors running in different directions based off of rotation setting 
+// - load are created by snorfler
+*/
+
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.AnalogInput;
+import edu.wpi.first.wpilibj.Counter;
+import edu.wpi.first.wpilibj.Victor;
+import edu.wpi.first.wpilibj.banner;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.io.hdw_io.IO;
+import frc.io.joysticks.JS_IO;
+import frc.util.BotMath;
+import frc.util.timers.OnDly;
+import frc.util.timers.OnOffDly;
+
+public class Carousel {
+    public static TalonSRX snorfler;
+    public static TalonSRX Spin_Motor;
+    public static TalonSRX Shoot;
+    
+    public static Banner intake1;
+    public static Banner intake2;
+
+    public int counter;
+
+    public static TalonSRX switch; // magentic switch setup to determine positions at spinning
+
+
+    public void reset { // resetting all motors and sensors - return values to Smart Dashboard
+        snorlfer = 0;
+        Spin_Motor = 0;
+        Shoot = 0;
+        counter = 0;
+        sdbUpdate();
+
+    }  
+        public static void init() {
+        SmartDashboard.putNumber("Shooter Spd", shooterPct);
+        cmdUpdate(0.0);
+        state = 0;
+    }
+
+    // I am the determinator
+    private static void determ(){
+        if(JS_IO.shooterRun.get()) state = 1;
+        if(JS_IO.shooterStop.get()) state = 0;
+    }  
+
+       public static void update() {
+        sdbUpdate();
+        determ();
+        //------------- Main State Machine --------------
+        // cmd update( shooter speed )
+        switch(state){
+        case 0: // Default, mtr=0.0
+            cmdUpdate( 0.0 );
+            prvState = state;
+            break;
+        case 1: //Shoot at default speed    Nice
+            cmdUpdate( shooterPct );
+            prvState = state;
+            if(!JS_IO.shooterRun.get()) state = 3;
+            break;
+        case 2: // Shooter slow, bump to compensate
+            cmdUpdate( 100.0 );
+            prvState = state;
+            break;
+        case 3: // Shooter idle after shooting once
+            cmdUpdate( 0.3 );
+            prvState = state;
+            break;
+        default: // Default, mtr=0.0
+            cmdUpdate( 0.0 );
+            prvState = state;
+            System.out.println("Bad Shooter state - " + state);
+            break;
+        }
+       }
+     
+    public void intake { // intake class to spin the intake torgue motor, using the snorfler
+        counter = 0; // counter to represent each space on the open plate
+        snorfler = 1; // starting the snorfler for intake
+        while (counter < 5){
+        if (intake1 != -1 || intake2 != -1) { // spinning the plate over one time during each loop
+          Spin_Motor.get();
+            Spin_Motor = 1;
+            counter++;
+        }
+        snorfler = 0; // turinging off the snorfler
+    }
+
+    public void shoot { // shoot class to turn on the shooter and spin the plate to each ball position
+        counter = 0; // counter to represent each space on the plate
+        Shoot = 1; // turning on the shooter
+        while (counter < 5){ 
+            cmdUpdate();
+            Spin_Motor = 1; // spinning the plate one place each loop
+            counter++;
+        }
+        Shoot.reset(); // turning off the shooter
+
+    }
+}
+ 
+ private static void sdbUpdate(){
+        shooterPct = SmartDashboard.getNumber("Shoot Spd", 0.7);
+    }
+
+    // Send commands to shooter motor
+    private static void cmdUpdate(double spd){
+        shooter.set(ControlMode.PercentOutput, spd);
+    }
+
+    //Returns if motor is off.
+    public static boolean get(){
+        return shooter.getMotorOutputPercent() < 0.1;
+    }
+
+    // TODO: Need to add code once we have the Talon encoder reading.
+    public static boolean isAtSpd(){
+        return true;
+    }
+}
